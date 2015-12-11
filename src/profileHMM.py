@@ -1,5 +1,6 @@
 from math import ceil
 import argparse
+import json
 import os
 
 
@@ -115,12 +116,14 @@ class ProfileHiddenMarkovMoldel:
                 # I(j) --> D(j+1) or I(j) --> M(j+1)
                 if self.t_prob[I]['strs'] and i != 0:
                     try:
-                        instodel = list(set([n for n in self.t_prob[I]['strs']
-                                             if self.inp_strings[n][i] == '.']))
+                        instodel = list(set(
+                            [n for n in self.t_prob[I]['strs']
+                             if self.inp_strings[n][i] == '.']))
                     except IndexError:
                         pass
                     instomatch = list(set(
-                        [n for n in self.t_prob[I]['strs'] if n not in instodel]))
+                        [n for n in self.t_prob[I]['strs']
+                         if n not in instodel]))
 
                     # if instodel is not empty
                     # I --> D
@@ -239,22 +242,33 @@ class ProfileHiddenMarkovMoldel:
 
     def create_result(self):
         # write emission and transition probability
+
+        def __detele(d):
+            # delete unnecessary information about 'strs'
+            # no need to check exception because it guarantees to have key
+            del d['strs']
+            for i in d:
+                del d[i]['strs']
+                prob = d[i].pop('prob')
+                d[i] = prob
+            return d
+        # delete unnecessary states
         self.t_prob = {
-            n: self.t_prob[n]
+            n: __detele(self.t_prob[n])
             for n in self.t_prob if self.t_prob[n]['strs']
         }
 
-        self.t_prob = sorted(self.t_prob.items(), key=_keyify)
-        self.e_prob = sorted(self.e_prob.items(), key=_keyify)
+        result = {
+            'transition': self.t_prob,
+            'emission': self.e_prob,
+            'matchState': len(self.match_states)
+        }
 
         os.chdir(self.output)
-        print(*self.e_prob, sep="\n",
-              file=open(os.path.join(self.output, 'e.out'), 'w'))
-        print(*self.t_prob, sep="\n",
-              file=open(os.path.join(self.output, 't.out'), 'w'))
-
-        #import chart
-        #chart.generate_chart(self.e_prob, self.char_list)
+        with open(os.path.join(self.output, 'result.phmm'), 'w') as output:
+            output.write(json.dumps(result, ensure_ascii=False))
+        # import chart
+        # chart.generate_chart(self.e_prob, self.char_list)
 
 
 def main():
