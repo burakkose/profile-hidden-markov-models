@@ -8,10 +8,6 @@ def _get_states(i):  # get state from parameter
     return 'M{}'.format(i), 'I{}'.format(i), 'D{}'.format(i)
 
 
-def _keyify(i):  # for sort
-    return int("{}".format(i[0][1:]))
-
-
 class ProfileHiddenMarkovMoldel:
 
     def __init__(self, inputfile, output):
